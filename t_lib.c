@@ -1,5 +1,6 @@
 #include "t_lib.h"
 
+const useconds_t timeout = 1;  
 struct tcb {
 	  int         thread_id;
           int         thread_priority;
@@ -12,9 +13,14 @@ tcb *running;
 tcb *highready;
 tcb *ready;
 
+void sig_handler(int sig_no) {
+sigset(SIGALRM, sig_handler);
+t_yield();
+}
 
 void t_yield()
 {
+  sighold(SIGALRM);
 
   tcb* tmp;
   tmp =  running; //store the currently running htread in tmp
@@ -33,8 +39,9 @@ void t_yield()
 			iter = iter->next;
   		iter->next = tmp; //add tmp to end of queue
 	}
-	
+	ualarm(timeout, 0);
 	swapcontext(tmp->thread_context, running->thread_context);
+        sigrelse(SIGALRM);
   }
   else {
         running = ready; //update running to first thread in ready queue
@@ -49,8 +56,9 @@ void t_yield()
 			iter = iter->next;
   		iter->next = tmp; //add tmp to end of queue
 	}
-	
+	ualarm(timeout, 0);
 	swapcontext(tmp->thread_context, running->thread_context);
+        sigrelse(SIGALRM);
 
   }
 
@@ -59,8 +67,10 @@ void t_yield()
 and the "ready" queues, creating TCB of the "main" thread, and inserting it into the running queue. */
 void t_init()
 {
+        sigset(SIGALRM, sig_handler);
 	tcb *tmp = (tcb*) malloc(sizeof(tcb));
 	tmp->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
+        ualarm(timeout, 0);
 	getcontext(tmp->thread_context);
 	tmp->next = NULL;
 	tmp->thread_id = 0;
@@ -170,3 +180,5 @@ void t_shutdown(){
 	free(running->thread_context);
 	free(running);	
 }
+
+
