@@ -24,8 +24,9 @@ void t_yield()
 
   tcb* tmp;
   tmp =  running; //store the currently running htread in tmp
+  if (tmp != NULL) {
   tmp->next = NULL;
-  
+  }
   if (highready != NULL) { //only yield if there is something in ready queue
 	running = highready; //update running to first thread in ready queue
    	highready = highready->next; //update ready to next thread
